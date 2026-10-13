@@ -1,0 +1,24 @@
+name: snipers_youtube_builder
+description: Android companion app for the hosted Snipers YouTube Builder.
+publish_to: none
+version: 1.0.11+2013
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_inappwebview: ^6.1.5
+  url_launcher: ^6.3.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/engine/manifest.json
+    - assets/engine/snipers-android-engine-v1.0.1.tar.gz

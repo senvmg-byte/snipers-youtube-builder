@@ -1,0 +1,111 @@
+plugins {
+    id "com.android.application"
+    id "org.jetbrains.kotlin.android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+def releaseSigningProperties = [
+    storeFile: providers.gradleProperty("snipersReleaseStoreFile").orNull,
+    storePassword: providers.gradleProperty("snipersReleaseStorePassword").orNull,
+    keyAlias: providers.gradleProperty("snipersReleaseKeyAlias").orNull,
+    keyPassword: providers.gradleProperty("snipersReleaseKeyPassword").orNull,
+]
+def hasReleaseSigning = releaseSigningProperties.values().every {
+    it != null && !it.trim().isEmpty()
+}
+def isReleaseBuild = gradle.startParameter.taskNames.any {
+    it.toLowerCase().contains("release")
+}
+if (isReleaseBuild && !hasReleaseSigning) {
+    throw new GradleException(
+        "Release signing is not configured. Add snipersReleaseStoreFile, " +
+        "snipersReleaseStorePassword, snipersReleaseKeyAlias, and " +
+        "snipersReleaseKeyPassword to your user-level Gradle properties."
+    )
+}
+
+android {
+    namespace "com.gronedwaffel.snipers_youtube_builder"
+    compileSdk flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_17.toString()
+    }
+
+    defaultConfig {
+        applicationId "com.gronedwaffel.snipers_youtube_builder"
+        minSdkVersion flutter.minSdkVersion
+        targetSdk flutter.targetSdkVersion
+        versionCode flutter.versionCode
+        versionName flutter.versionName
+        ndk {
+            abiFilters "arm64-v8a"
+        }
+    }
+
+    if (hasReleaseSigning) {
+        signingConfigs {
+            release {
+                storeFile file(releaseSigningProperties.storeFile)
+                storePassword releaseSigningProperties.storePassword
+                keyAlias releaseSigningProperties.keyAlias
+                keyPassword releaseSigningProperties.keyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    sourceSets {
+        main {
+            jniLibs.srcDirs = [
+                rootProject.file("../../relapse-host/build/android-engine/native-libs"),
+                layout.buildDirectory.dir("generated/androidNativeLibs"),
+            ]
+        }
+    }
+
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+            keepDebugSymbols += ["**/libnode.so", "**/libdotnet.so", "**/libzig.so"]
+        }
+    }
+}
+
+def dotnetLauncher = layout.buildDirectory.file("generated/androidNativeLibs/arm64-v8a/libdotnet-launcher.so")
+def buildDotnetLauncher = tasks.register("buildDotnetLauncher", Exec) {
+    inputs.file("src/main/cpp/dotnet_launcher.c")
+    outputs.file(dotnetLauncher)
+    doFirst {
+        def compiler = new File(android.ndkDirectory, "toolchains/llvm/prebuilt/windows-x86_64/bin/clang.exe")
+        if (!compiler.isFile()) {
+            throw new GradleException("Android NDK clang was not found at ${compiler}.")
+        }
+        def output = dotnetLauncher.get().asFile
+        output.parentFile.mkdirs()
+        commandLine compiler.absolutePath,
+            "--target=aarch64-linux-android${android.defaultConfig.minSdk}",
+            "-fPIE", "-pie", "src/main/cpp/dotnet_launcher.c", "-ldl",
+            "-o", output.absolutePath
+    }
+}
+tasks.named("preBuild").configure {
+    dependsOn(buildDotnetLauncher)
+}
+
+flutter {
+    source "../.."
+}

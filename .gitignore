@@ -15,6 +15,7 @@ relapse-host/artifacts/youtube-installer/*
 *.pkg
 *.dat
 *.zip
+*.tar.gz
 .env
 .env.*
 /experimental/local/

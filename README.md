@@ -6,6 +6,8 @@ Create a YouTube startup bundle for 14 exact PS5 firmware targets from 11.00 thr
 
 [Open the builder](https://sniperscheats.lol/builder/) | [Payload downloads](https://sniperscheats.lol/payloads/) | [Build and validation details](experimental/README.md) | [Credits](CREDITS.md)
 
+An Android companion app source project built with Flutter is available in [flutter_app/](flutter_app/). It wraps the hosted builder and can also prepare local firmware-specific bundles over a private Wi-Fi LAN. See the [English installation guide](INSTALLATION.md) and [Android build notes](flutter_app/README.md).
+
 The experimental line is merged into main. New bundles include the exact user-tested etaHEN Unified r1 ELF, with PS4/PS5 FPS display, plugins, Toolbox placement and the controller startup fix. Existing YouTube installations do not update themselves: rebuild and install a new bundle. Firmware-specific feature testing remains scoped; see the etaHEN release notes.
 
 The native handoff owns the payloads before closing YouTube, retains the five-second dashboard wait, and waits for etaHEN/kstuff readiness before subsequent payloads. Installation needs an existing jailbreak and etaHEN. The installer chooses the matching YouTube package, verifies it and the startup image, and can reconcile a lost DPI reply against actual installation completion.
